@@ -36,3 +36,4 @@ yarn-error.log*
 .secret
 
 contracts/artifacts/
+.deps/*
