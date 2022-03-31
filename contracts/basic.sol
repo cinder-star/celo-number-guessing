@@ -29,4 +29,8 @@ contract BasicGame {
         secretNumber = _secretNumber;
         maxAttemps = _maxAttempts;
     }
+
+    function attepmt (string memory _guess) external view returns (bool) {
+        return keccak256(abi.encodePacked(_guess)) == secretNumber;
+    }
 }
