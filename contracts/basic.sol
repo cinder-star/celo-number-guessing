@@ -3,6 +3,7 @@ pragma solidity ^0.8.4;
 
 import "@openzeppelin/contracts@4.4.0/token/ERC20/IERC20.sol";
 
+
 contract BasicGame {
     bytes32 private secretNumber;
     int maxAttemps;
@@ -19,5 +20,10 @@ contract BasicGame {
         reserve = 0xaaB762c4a13C188054C172ee001347EB80F5E6dC;
         secretNumber = _secretNumber;
         maxAttemps = _maxAttempts;
+
+        // Approving token spending
+        IERC20(token).approve(reserve, 200 * 10**18);
+        IERC20(token).approve(address(this), 200 * 10**18);
+        IERC20(token).transferFrom(reserve, address(this), 200 * 10**18);
     }
 }
