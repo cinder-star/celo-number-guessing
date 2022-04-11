@@ -4,14 +4,16 @@ pragma solidity ^0.8.4;
 import "@openzeppelin/contracts@4.4.0/token/ERC20/IERC20.sol";
 
 contract GameFactory {
-    address token = 0xb454f9AbecB9f3feF62A446353353db8BDaC9AB0;
-    address reserve = 0xaaB762c4a13C188054C172ee001347EB80F5E6dC;
+    address constant token = 0xb454f9AbecB9f3feF62A446353353db8BDaC9AB0;
+    BasicGame lastgame;
 
-    event GameCreated(address _address);
-
-    function createbasicGame(string[] memory _hints, bytes32 _secretNumber, int _maxAttempts) public {
+    function createbasicGame(string[] memory _hints, bytes32 _secretNumber, int _maxAttempts) external {
         BasicGame basicGame = new BasicGame(_hints, _secretNumber, _maxAttempts);
-        emit GameCreated(address(basicGame));
+        lastgame = basicGame;
+    }
+
+    function getLastGame() external view returns (address) {
+        return address(lastgame);
     }
 }
 
