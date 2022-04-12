@@ -22,8 +22,8 @@ contract BasicGame {
     bytes32 private secretNumber;
     int maxAttemps;
     string[] private hints;
-    address[] private winners;
     address owner;
+    mapping (address => bool) winners;
 
     constructor(string[] memory _hints, bytes32 _secretNumber, int _maxAttempts) {
         owner = msg.sender;
@@ -32,7 +32,17 @@ contract BasicGame {
         maxAttemps = _maxAttempts;
     }
 
-    function attepmt (string memory _guess) external view returns (bool) {
+    modifier notOwner(address _address) {
+        require(_address != owner, "Owner can't perticipate in own game");
+        _;
+    }
+
+    modifier notWinner(address _address) {
+        require(winners[_address] != true, "Winners can't participate");
+        _;
+    }
+
+    function attepmt (string memory _guess) external view notOwner(msg.sender) notWinner(msg.sender) returns (bool) {
         return keccak256(abi.encodePacked(_guess)) == secretNumber;
     }
 }
