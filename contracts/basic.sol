@@ -38,7 +38,6 @@ contract BasicGame {
     
     modifier eligiblePlayer() {
         require(msg.sender != owner, "Owner can't perticipate in own game");
-        require(winners[msg.sender] != true, "Winners can't participate");
         require(attempts[msg.sender] < maxAttemps, "No attempts remaining");
         _;
     }
