@@ -24,8 +24,7 @@ contract BasicGame {
     address public owner;
     mapping (address => bool) winners;
     mapping (address => uint) attempts;
-
-    address constant token = 0xb454f9AbecB9f3feF62A446353353db8BDaC9AB0;
+    mapping (address => bool) paid;
 
     constructor(string[] memory _hints, bytes32 _secretNumber, address _owner, uint _maxAttempts) {
         owner = _owner;
@@ -44,14 +43,30 @@ contract BasicGame {
         _;
     }
 
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Only owner allowed.");
+        _;
+    }
+
     function attempt (bytes32 _guess) private view returns (bool) {
         return keccak256(abi.encodePacked(keccak256(abi.encodePacked(_guess)))) == secretNumber;
     }
 
-    function play(bytes32 _guess) external payable eligiblePlayer {
+    function isPayablePlayer(address _address) external view returns(bool) {
+        if (winners[_address] && !paid[_address]) {
+            return true;
+        }
+        return false;
+    }
+
+    function pay(address _address) external onlyOwner {
+        paid[_address] = true;
+    }
+
+    function play(bytes32 _guess) external eligiblePlayer {
         if (attempt(_guess)) {
-            IERC20(token).transfer(msg.sender, 5 * 10**18);
             winners[msg.sender] = true;
+            attempts[msg.sender] += 1;
             emit GameResult("Success");
         } else {
             attempts[msg.sender] += 1;
