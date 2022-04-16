@@ -4,11 +4,10 @@ pragma solidity ^0.8.4;
 import "@openzeppelin/contracts@4.4.0/token/ERC20/IERC20.sol";
 
 contract GameFactory {
-    address constant token = 0xb454f9AbecB9f3feF62A446353353db8BDaC9AB0;
     BasicGame lastgame;
 
-    function createbasicGame(string[] memory _hints, bytes32 _secretNumber, int _maxAttempts) external {
-        BasicGame basicGame = new BasicGame(_hints, _secretNumber, _maxAttempts);
+    function createbasicGame(string[] memory _hints, bytes32 _secretNumber, uint _maxAttempts) external {
+        BasicGame basicGame = new BasicGame(_hints, _secretNumber, msg.sender, _maxAttempts);
         lastgame = basicGame;
     }
 
@@ -20,29 +19,43 @@ contract GameFactory {
 
 contract BasicGame {
     bytes32 private secretNumber;
-    int maxAttemps;
+    uint maxAttemps;
     string[] private hints;
-    address owner;
+    address public owner;
     mapping (address => bool) winners;
+    mapping (address => uint) attempts;
 
-    constructor(string[] memory _hints, bytes32 _secretNumber, int _maxAttempts) {
-        owner = msg.sender;
+    address constant token = 0xb454f9AbecB9f3feF62A446353353db8BDaC9AB0;
+
+    constructor(string[] memory _hints, bytes32 _secretNumber, address _owner, uint _maxAttempts) {
+        owner = _owner;
         hints = _hints;
         secretNumber = _secretNumber;
         maxAttemps = _maxAttempts;
     }
 
-    modifier notOwner(address _address) {
-        require(_address != owner, "Owner can't perticipate in own game");
+    event GameResult(string _msg);
+    event HashLog(bytes32 _msg);
+    
+    modifier eligiblePlayer() {
+        require(msg.sender != owner, "Owner can't perticipate in own game");
+        require(winners[msg.sender] != true, "Winners can't participate");
+        require(attempts[msg.sender] < maxAttemps, "No attempts remaining");
         _;
     }
 
-    modifier notWinner(address _address) {
-        require(winners[_address] != true, "Winners can't participate");
-        _;
+    function attempt (bytes32 _guess) private view returns (bool) {
+        return keccak256(abi.encodePacked(keccak256(abi.encodePacked(_guess)))) == secretNumber;
     }
 
-    function attepmt (string memory _guess) external view notOwner(msg.sender) notWinner(msg.sender) returns (bool) {
-        return keccak256(abi.encodePacked(_guess)) == secretNumber;
+    function play(bytes32 _guess) external payable eligiblePlayer {
+        if (attempt(_guess)) {
+            IERC20(token).transfer(msg.sender, 5 * 10**18);
+            winners[msg.sender] = true;
+            emit GameResult("Success");
+        } else {
+            attempts[msg.sender] += 1;
+            emit GameResult("Failed");
+        }
     }
 }
