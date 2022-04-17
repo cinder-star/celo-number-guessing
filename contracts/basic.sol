@@ -3,7 +3,7 @@ pragma solidity ^0.8.4;
 
 import "@openzeppelin/contracts@4.4.0/token/ERC20/IERC20.sol";
 
-contract GameFactory {
+contract BasicGameFactory {
     BasicGame lastgame;
 
     function createbasicGame(string[] memory _hints, bytes32 _secretNumber, uint _maxAttempts) external {
@@ -47,6 +47,10 @@ contract BasicGame {
         _;
     }
 
+    function getHints() external view returns(string[] memory) {
+        return hints;
+    }
+
     function attempt (bytes32 _guess) private view returns (bool) {
         return keccak256(abi.encodePacked(keccak256(abi.encodePacked(_guess)))) == secretNumber;
     }
@@ -60,6 +64,10 @@ contract BasicGame {
 
     function pay(address _address) external onlyOwner {
         paid[_address] = true;
+    }
+
+    function isWinner(address _address) external view returns(bool) {
+        return winners[_address];
     }
 
     function play(bytes32 _guess) external eligiblePlayer {
