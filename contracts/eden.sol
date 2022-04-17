@@ -10,7 +10,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract EdenGameFactory {
     address private lastGame;
-    address private basicGameFactoryAddress = 0x25DDbdcADdC6749EaE4C02Eb0c2DAa27118b6857;
+    address private basicGameFactoryAddress = 0x07249Ab6Fa82cC2B6D66202972E7bbe274880735;
     address private erc20Token = 0xb454f9AbecB9f3feF62A446353353db8BDaC9AB0;
     address private nftFactory = 0x750BFF16F99d6ddace2B8c0F692300C134DC8bf1;
 
