@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.4;
-
 import "@openzeppelin/contracts@4.4.0/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
+import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Burnable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
@@ -11,6 +12,7 @@ contract EdenGameFactory {
     address private lastGame;
     address private basicGameFactoryAddress = 0x25DDbdcADdC6749EaE4C02Eb0c2DAa27118b6857;
     address private erc20Token = 0xb454f9AbecB9f3feF62A446353353db8BDaC9AB0;
+    address private nftFactory = 0xbeA311c0d4AB46B2A87726E9a46514830e7aE2f6;
 
     function createEdenGame (
         bytes32 _secretNumber,
@@ -21,20 +23,13 @@ contract EdenGameFactory {
         string memory _nftDescription,
         string memory _nftURI) external 
     {
-        // Cheking eligibilty requirement
         address lastBasicGame = BasicGameFactory(basicGameFactoryAddress).getLastGame();
         require(BasicGame(lastBasicGame).isWinner(msg.sender), "Not Eligible");
         require(IERC20(erc20Token).balanceOf(msg.sender) >= 3 * 10**18, "Not enough balance");
-
-        // Staking Eden tokens
         IERC20(erc20Token).transferFrom(msg.sender, address(this), 3 * 10**18);
-
-        // Minting NFT
-        EdenNFT edenNFT = new EdenNFT(_nftName, _nftSymbol, _nftDescription);
-        lastGame = address(new EdenGame(msg.sender, _secretNumber, _hints, _minimumStakeAmount, address(edenNFT)));
-        edenNFT.safeMint(lastGame, _nftURI);
-
-        // Staking Eden Tokens
+        NFTFactory(nftFactory).createNFT(_nftName, _nftSymbol, _nftDescription);
+        lastGame = address(new EdenGame(msg.sender, _secretNumber, _hints, _minimumStakeAmount, address(NFTFactory(nftFactory).getLastNFT())));
+        NFTFactory(nftFactory).safeMint(lastGame, _nftURI);
         IERC20(erc20Token).transfer(lastGame, 3 * 10**18);
     }
 
@@ -43,8 +38,9 @@ contract EdenGameFactory {
     }
 }
 
-contract EdenGame {
+contract EdenGame is IERC721Receiver {
     address public owner;
+    address public creator;
     string[] private hints;
     bytes32 private secretNumber;
     uint minimumStakeAmount;
@@ -100,40 +96,9 @@ contract EdenGame {
             emit GameResult("Failed");
         }
     }
-}
 
-contract EdenNFT is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
-    string private _description;
-
-    constructor(string memory name_, string memory symbol_, string memory description_) ERC721(name_, symbol_) {
-        _description = description_;
-    }
-
-    function getInfo() external view returns (string memory, string memory, string memory) {
-        return (name(), symbol(), _description);
-    }
-
-    function safeMint(address to, string memory uri)
-        public
-        onlyOwner
-    {
-        _safeMint(to, 1);
-        _setTokenURI(1, uri);
-    }
-
-    // The following functions are overrides required by Solidity.
-
-    function _burn(uint256 tokenId) internal override(ERC721, ERC721URIStorage) {
-        super._burn(tokenId);
-    }
-
-    function tokenURI(uint256 tokenId)
-        public
-        view
-        override(ERC721, ERC721URIStorage)
-        returns (string memory)
-    {
-        return super.tokenURI(tokenId);
+    function onERC721Received(address, address, uint256, bytes calldata data) external pure override(IERC721Receiver) returns (bytes4) {
+        return this.onERC721Received.selector;
     }
 }
 
@@ -143,4 +108,10 @@ interface BasicGameFactory {
 
 interface BasicGame {
     function isWinner(address _address) external view returns(bool);
+}
+
+interface NFTFactory {
+    function createNFT(string memory _nftName, string memory _nftSymbol, string memory _nftDescription) external;
+    function getLastNFT() external view returns(address);
+    function safeMint(address to, string memory uri) external;
 }
