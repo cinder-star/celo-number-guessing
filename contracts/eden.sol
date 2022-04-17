@@ -93,6 +93,7 @@ contract EdenGame {
     function play (bytes32 _guess) external payable eligibleForGame eligiblePlayer {
         if (attempt(_guess)) {
             IERC721(nftAddress).safeTransferFrom(address(this), msg.sender, 1);
+            IERC20(erc20Token).transfer(owner, 3 * 10**18);
             distributed = true;
             emit GameResult("Success");
         } else {
