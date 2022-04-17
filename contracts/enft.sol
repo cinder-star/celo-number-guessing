@@ -34,8 +34,8 @@ contract EdenNFT is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
         _description = description_;
     }
 
-    function getInfo() external view returns (string memory, string memory, string memory) {
-        return (name(), symbol(), _description);
+    function getInfo(uint256 tokenId) external view returns (string memory, string memory, string memory, string memory) {
+        return (name(), symbol(), _description, this.tokenURI(tokenId));
     }
 
     function safeMint(address to, string memory uri) public onlyOwner {

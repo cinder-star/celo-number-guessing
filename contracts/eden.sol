@@ -12,7 +12,7 @@ contract EdenGameFactory {
     address private lastGame;
     address private basicGameFactoryAddress = 0x25DDbdcADdC6749EaE4C02Eb0c2DAa27118b6857;
     address private erc20Token = 0xb454f9AbecB9f3feF62A446353353db8BDaC9AB0;
-    address private nftFactory = 0xbeA311c0d4AB46B2A87726E9a46514830e7aE2f6;
+    address private nftFactory = 0x750BFF16F99d6ddace2B8c0F692300C134DC8bf1;
 
     function createEdenGame (
         bytes32 _secretNumber,
@@ -61,6 +61,7 @@ contract EdenGame is IERC721Receiver {
 
     modifier eligibleForGame() {
         address lastBasicGame = BasicGameFactory(basicGameFactoryAddress).getLastGame();
+        require(BasicGame(lastBasicGame).isWinner(msg.sender), "Not eligible");
         require(!distributed, "Game ended");
         require(msg.sender != owner, "Owner can't participate");
         _;
@@ -71,17 +72,26 @@ contract EdenGame is IERC721Receiver {
         _;
     }
 
+    modifier notParticipant() {
+        require(!participants[msg.sender], "You have already participated");
+        _;
+    }
+
     event GameResult(string _msg);
 
     function getGameInfo() external view returns(string[] memory, uint) {
         return (hints, minimumStakeAmount);
     }
 
+    function getNFTInfo(uint256 tokenId) external view returns(string memory, string memory, string memory, string memory) {
+        return EdenNFT(nftAddress).getInfo(tokenId);
+    }
+
     function attempt (bytes32 _guess) private view returns (bool) {
         return keccak256(abi.encodePacked(keccak256(abi.encodePacked(_guess)))) == secretNumber;
     }
 
-    function participate () external {
+    function participate () external eligibleForGame notParticipant {
         IERC20(erc20Token).transferFrom(msg.sender, address(this), minimumStakeAmount);
         participants[msg.sender] = true;
     }
@@ -97,7 +107,7 @@ contract EdenGame is IERC721Receiver {
         }
     }
 
-    function onERC721Received(address, address, uint256, bytes calldata data) external pure override(IERC721Receiver) returns (bytes4) {
+    function onERC721Received(address, address, uint256, bytes calldata) external pure override(IERC721Receiver) returns (bytes4) {
         return this.onERC721Received.selector;
     }
 }
@@ -114,4 +124,8 @@ interface NFTFactory {
     function createNFT(string memory _nftName, string memory _nftSymbol, string memory _nftDescription) external;
     function getLastNFT() external view returns(address);
     function safeMint(address to, string memory uri) external;
+}
+
+interface EdenNFT {
+    function getInfo(uint256 tokenId) external view returns (string memory, string memory, string memory, string memory);
 }
